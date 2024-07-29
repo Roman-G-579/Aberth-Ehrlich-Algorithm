@@ -93,9 +93,9 @@ def negligible_complex(expression: complex, epsilon: float) -> bool:
 
 # הפעולה מקבלת את הפונקציה, את נגזרתה, ואת המקדמים של הפונקציה. בנוסף מקבלת אפסילון אשר קובע את ההפרש שלפיו מחשיבים
 # מספר כזניח ואת מספר האיטרציות המקסימלי
-def aberth_method(f_0, f_1, coefficients, epsilon=0.0001, nmax=500):
+def aberth_method(f_0, f_1, coefficients, epsilon=0.000001, nmax=100):
     try:
-        random_guesses = random_approximations(coefficients)
+        random_guesses = (random_approximations(coefficients))
         #print(random_guesses)
         for n in range(nmax):
             offsets = []
