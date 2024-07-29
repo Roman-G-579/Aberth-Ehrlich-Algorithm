@@ -95,7 +95,7 @@ def negligible_complex(expression: complex, epsilon: float) -> bool:
 # מספר כזניח ואת מספר האיטרציות המקסימלי
 def aberth_method(f_0, f_1, coefficients, epsilon=0.000001, nmax=100):
     try:
-        random_guesses = (random_approximations(coefficients))
+        random_guesses = round_complex(random_approximations(coefficients))
         #print(random_guesses)
         for n in range(nmax):
             offsets = []
@@ -112,7 +112,7 @@ def aberth_method(f_0, f_1, coefficients, epsilon=0.000001, nmax=100):
             random_guesses = [approximation - offset for approximation, offset in zip(random_guesses, offsets)]
             if all(negligible_complex(poly_val(coefficients, guess), epsilon) for guess in random_guesses):
                 break
-        return set(random_guesses)
+        return random_guesses
     except ValueError:
         return set()
 
@@ -158,8 +158,9 @@ def f_1(x):
 
 # the functions coefficients sorted by ascending degree size
 # coefficients = [8, -7, 2, -3, 2]
-# coefficients = [4, -10, 4]
-coefficients = read_coefficients('poly_coeff(997).txt')
+
+coefficients = [4, 6, 8, -10, 4]
+# coefficients = read_coefficients('poly_coeff(997).txt')
 derivative_coefficients = polynomial_derivative_coefficients(coefficients)  # Polynomial derivative's coefficients
 
 # print(random_approximations(coefficients))

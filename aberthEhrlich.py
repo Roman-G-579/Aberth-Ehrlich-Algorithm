@@ -21,30 +21,10 @@ def read_coefficients(filename):
 
 
 def is_close_to_zero(value, epsilon):
-    # print(abs(value.real))
-    # print(abs(value.imag))
-    # print(abs(value.real) < epsilon and abs(value.imag) < epsilon)
     return abs(value.real) < epsilon and abs(value.imag) < epsilon
 
 
-def normalize_degree(angle):
-    """
-    Normalize an angle to be within the range [0, 360) degrees.
-
-    Parameters:
-    angle (float): The angle in degrees.
-
-    Returns:
-    float: The normalized angle.
-    """
-    while angle >= 360:
-        angle -= 360
-    while angle < 0:
-        angle += 360
-    return angle
-
-
-def cos(x, precision=50):
+def cos(x, precision=25):
     term = 1
     cos_x = term
     for n in range(1, precision):
@@ -53,7 +33,7 @@ def cos(x, precision=50):
     return cos_x
 
 
-def sin(x, precision=50):
+def sin(x, precision=25):
     term = x
     sin_x = term
     for n in range(1, precision):
@@ -66,32 +46,11 @@ def pi():
     return 3.141592653589793
 
 
-# function to solve
-def f(x):
-    return 4 * x ** 2 - 10 * x + 4
-
-
-# derivative of function
-def df(x):
-    return 8 * x - 10
-    #return 8 * x ** 3 - 9 * x ** 2 + 4 * x - 7
-
-
-# def poly_val(coefficients, x, n=None):
-#     if n is None:
-#         n = len(coefficients)
-#
-#     if n == 1:
-#         return coefficients[0]
-#
-#     return coefficients[0] + x * poly_val(coefficients[1:], x, n - 1)
-
-
-def poly_val_rec(p, x, n):  # n = deg(p)
-    if n == 0:
-        return p[0]
+def poly_val_rec(p, x, i=0):  # n = deg(p)
+    if i == len(p):
+        return 0
     else:
-        return p[n] + poly_val_rec(p, x, n - 1) * x
+        return p[i] + x * poly_val_rec(p, x, i + 1)
 
 
 def poly_val(p, x):
@@ -102,20 +61,27 @@ def poly_val(p, x):
 
 
 def frac_val(p, q, x):
-    # deg_p = len(p) - 1
-    # deg_q = len(q) - 1
-    # if abs(x) <= 1:
-    #     return poly_val_rec(p, x, deg_p) / poly_val_rec(q, x, deg_q)
-    # else:
-    #     return x * poly_val_rec(p[::-1], 1 / x, deg_p) / poly_val_rec(q[::-1], 1 / x, deg_q)
-
+    """
+    Calculates the value of p(z_k)/p'(z_k) for the Aberth-Ehrlich algorithm
+    :param p: The polynomial's coefficients
+    :param q: The polynomial derivative's coefficients
+    :param x: The value of z_k to insert as the function parameter
+    :return: The result fraction
+    """
     if abs(x) <= 1:
         return poly_val(p, x) / poly_val(q, x)
     else:
+        # Handles x values larger than 1, where attempting to solve the function using the regular method
+        # would result in a number overflow for large polynomials
         return x * (poly_val(p[::-1], 1 / x)) / poly_val(q[::-1], 1 / x)
 
 
 def polynomial_derivative_coefficients(coefficients):
+    """
+    Calculates the coefficients of a polynomial's derivative based on the given coefficients
+    :param coefficients: the polynomial's coefficients array
+    :return: the derivative's coefficients array
+    """
     # The length of the coefficients array
     n = len(coefficients)
 
@@ -138,7 +104,8 @@ def get_approximations(coefficients):
     # Polynomial's degree
     deg = len(coefficients) - 1
 
-    step = 2 * pi() / deg
+    # Precompute pi
+    pi_val = pi()
 
     # Constant coefficient (lower bound)
     p_0 = coefficients[deg]
@@ -149,34 +116,53 @@ def get_approximations(coefficients):
     # Complex plane's radius
     r = abs((p_0 / p_n) ** (1 / deg))
 
-    approximations = []
-    angles = [0 + x * (2 * pi()) / (deg-1) for x in range(deg)]
+    # Distributes the numbers across the complex plane
+    angles = [x * (2 * pi_val) / (deg-1) for x in range(deg)]
     return [complex(r * cos(angle), r * sin(angle)) for angle in angles]
 
 
-def aberth_method(coefficients, epsilon=0.00001):
-    approximations = round_complex(get_approximations(coefficients))
+def aberth_method(coefficients, epsilon=0.0001):
+    """
+    Finds the roots of the given polynomial using the Aberth-Ehrlich algorithm
+    :param coefficients: An array of the polynomial's coefficients in descending order (First element has
+                         the highest degree, last element is constant)
+    :param epsilon: The precision level of the algorithm
+    :return: Array of roots
+    """
+    # Initial root approximations
+    approximations = (get_approximations(coefficients))
 
-    for n in range(100000):
+    # The process is repeated a number of times for better results
+    for n in range(20):
+        # Array of offsets (w_k)
         offsets = []
+
+        # Finds the offset for every approximation
         for k, zk in enumerate(approximations):
 
+            # p(z_k)/p'(z_k)
             frac = frac_val(coefficients, derivative_coefficients, zk)
 
+            # sigma of 1 / (z_k - z_j) for every j not equal to k
             sigma = sum(1 / (zk - zj) for j, zj in enumerate(approximations) if k !=j and zk != zj)
+
             denominator = 1 - frac * sigma
+
+            # Adds the w_k to the offsets array
             offsets.append(frac / denominator)
 
+        # Calculates the new approximations by subtracting the offset values (z_k - w_k)
         for i in range(len(approximations)):
             approximations[i] -= offsets[i]
 
-        # Check if all values are close to zero without using 'all'
+        # Checks if all values are close to zero
         roots_converge = True
         for val in approximations:
             if not is_close_to_zero(poly_val(coefficients, val), epsilon):
                 roots_converge = False
                 break
 
+        # Once all roots have converged, the process is done
         if roots_converge:
             break
 
