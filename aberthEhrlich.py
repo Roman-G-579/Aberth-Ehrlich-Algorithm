@@ -158,15 +158,17 @@ def aberth_method(coefficients, epsilon=0.0001):
     """
     # Initial root approximations
     approximations = get_approximations(coefficients)
+    derivative_coefficients = polynomial_derivative_coefficients(coefficients)  # Polynomial derivative's coefficients
 
     # The process is repeated a number of times for better results
-    for n in range(500):
+    for n in range(100):
         # Array of offsets (w_k)
         offsets = []
 
         # Finds the offset for every approximation
         for k, zk in enumerate(approximations):
 
+            # p(z_k)/p'(z_k)
             frac = frac_val(coefficients, derivative_coefficients, zk)
 
             sigma = calculate_sigma(approximations, k)
@@ -178,7 +180,7 @@ def aberth_method(coefficients, epsilon=0.0001):
         for i in range(len(approximations)):
             approximations[i] -= offsets[i]
 
-        # Checks if all values are close to zero
+        # Checks if all values are sufficiently close to the actual roots
         roots_converge = True
         for val in approximations:
             if not is_close_to_zero(poly_val(coefficients, val), epsilon):
@@ -196,7 +198,7 @@ def aberth_method(coefficients, epsilon=0.0001):
 # coefficients = [4, 6, 8, -10, 4]
 
 coefficients = read_coefficients('poly_coeff(997).txt')  # Polynomial's coefficients
-derivative_coefficients = polynomial_derivative_coefficients(coefficients)  # Polynomial derivative's coefficients
+
 
 start = time.time()
 result = (aberth_method(coefficients))
@@ -204,3 +206,4 @@ end = time.time()
 print(end - start)
 
 print(round_complex(result))
+print(len(result))
