@@ -1,7 +1,7 @@
 import time
 import sys
 
-sys.setrecursionlimit(10 ** 6)
+sys.setrecursionlimit(2000)
 
 
 def round_complex(complex_num):
@@ -24,21 +24,39 @@ def is_close_to_zero(value, epsilon):
     return abs(value.real) < epsilon and abs(value.imag) < epsilon
 
 
-def cos(x, precision=25):
+def cos(x, precision=50):
+    # ( (-1)^n ) * x^2n / (2n)!
     term = 1
     cos_x = term
+
+    # Precompute x^2
+    x_squared = x * x
+
+    # Alternating sign for the series
+    sign = -1
+
     for n in range(1, precision):
-        term *= -x ** 2 / ((2 * n - 1) * (2 * n))
-        cos_x += term
+        term *= x_squared / ((2 * n - 1) * (2 * n))
+        cos_x += sign * term
+        sign = -sign
     return cos_x
 
 
-def sin(x, precision=25):
+def sin(x, precision=50):
+    # ( (-1)^n ) * x^(2n+1) / (2n+1)!
     term = x
     sin_x = term
+
+    # Precompute x^2
+    x_squared = x * x
+
+    # Alternating sign for the series
+    sign = -1
+
     for n in range(1, precision):
-        term *= -x ** 2 / ((2 * n) * (2 * n + 1))
-        sin_x += term
+        term *= x_squared / ((2 * n) * (2 * n + 1))
+        sin_x += sign * term
+        sign = -sign
     return sin_x
 
 
@@ -74,6 +92,15 @@ def frac_val(p, q, x):
         # Handles x values larger than 1, where attempting to solve the function using the regular method
         # would result in a number overflow for large polynomials
         return x * (poly_val(p[::-1], 1 / x)) / poly_val(q[::-1], 1 / x)
+
+
+def calculate_sigma(approximations, k):
+    zk = approximations[k]
+    sigma = 0.0
+    for j, zj in enumerate(approximations):
+        if j != k and zk != zj:
+            sigma += 1 / (zk - zj)
+    return sigma
 
 
 def polynomial_derivative_coefficients(coefficients):
@@ -130,28 +157,24 @@ def aberth_method(coefficients, epsilon=0.0001):
     :return: Array of roots
     """
     # Initial root approximations
-    approximations = (get_approximations(coefficients))
+    approximations = get_approximations(coefficients)
 
     # The process is repeated a number of times for better results
-    for n in range(20):
+    for n in range(500):
         # Array of offsets (w_k)
         offsets = []
 
         # Finds the offset for every approximation
         for k, zk in enumerate(approximations):
 
-            # p(z_k)/p'(z_k)
             frac = frac_val(coefficients, derivative_coefficients, zk)
 
-            # sigma of 1 / (z_k - z_j) for every j not equal to k
-            sigma = sum(1 / (zk - zj) for j, zj in enumerate(approximations) if k !=j and zk != zj)
+            sigma = calculate_sigma(approximations, k)
 
             denominator = 1 - frac * sigma
 
-            # Adds the w_k to the offsets array
             offsets.append(frac / denominator)
 
-        # Calculates the new approximations by subtracting the offset values (z_k - w_k)
         for i in range(len(approximations)):
             approximations[i] -= offsets[i]
 
@@ -164,6 +187,7 @@ def aberth_method(coefficients, epsilon=0.0001):
 
         # Once all roots have converged, the process is done
         if roots_converge:
+            print('roots converged at iteration ', n)
             break
 
     return approximations
@@ -179,6 +203,4 @@ result = (aberth_method(coefficients))
 end = time.time()
 print(end - start)
 
-print(result)
 print(round_complex(result))
-print(len(result))
