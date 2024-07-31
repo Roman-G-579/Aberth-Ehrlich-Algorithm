@@ -133,7 +133,7 @@ def aberth_method(coefficients, epsilon=0.0001):
     approximations = (get_approximations(coefficients))
 
     # The process is repeated a number of times for better results
-    for n in range(50):
+    for n in range(100):
         # Array of offsets (w_k)
         offsets = []
 
@@ -171,14 +171,14 @@ def aberth_method(coefficients, epsilon=0.0001):
 
 # coefficients = [4, 6, 8, -10, 4]
 
-coefficients = read_coefficients('poly_coeff(997).txt')  # Polynomial's coefficients
+coefficients = read_coefficients('test2.txt')  # Polynomial's coefficients
 derivative_coefficients = polynomial_derivative_coefficients(coefficients)  # Polynomial derivative's coefficients
 
 start = time.time()
 result = (aberth_method(coefficients))
 end = time.time()
-print(end - start)
+#print(end - start)
 
 #print(result)
 print(round_complex(result))
-#print(len(result))
+print(len(result))

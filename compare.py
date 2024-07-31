@@ -18,7 +18,6 @@ def extract_complex_numbers_result2(txt):
     complex_pattern = re.compile(r'\(([^)]+\))')
     complex_numbers = []
     for match in complex_pattern.findall(txt.replace('i', 'j'))[0].replace(')', '').split(' '):
-        print(match)
         complex_numbers.append(complex(match))
     return complex_numbers
 
