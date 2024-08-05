@@ -171,7 +171,7 @@ def aberth_method(coefficients, epsilon=0.0001):
 
 # coefficients = [4, 6, 8, -10, 4]
 
-coefficients = read_coefficients('test2.txt')  # Polynomial's coefficients
+coefficients = read_coefficients('poly_coeff(997).txt')  # Polynomial's coefficients
 derivative_coefficients = polynomial_derivative_coefficients(coefficients)  # Polynomial derivative's coefficients
 
 start = time.time()
