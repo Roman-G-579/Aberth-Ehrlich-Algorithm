@@ -1,5 +1,7 @@
 #lang racket
 
+(define pi 3.141592653589793)
+
 (define (round-complex complex-nums)
   (map (λ(num)
          (let ((real (real-part num))
@@ -22,7 +24,7 @@
   (and (< (abs (real-part value)) epsilon)
        (< (abs (imag-part value)) epsilon)))
 
-(define pi 3.141592653589793)
+
 
  (define poly-val (λ(p x)
          (if (null? p)
@@ -35,30 +37,33 @@
       (* x (/ (poly-val p (/ 1 x))
               (poly-val q (/ 1 x))))))
 
+
+; Takes a list of coefficients, and returns a list of the derivative's coefficients
 (define (polynomial-derivative-coefficients coefficients)
   (let ((n (length coefficients))) ; n size is equal to the amount of coefficients in the polynomial
     (if (= n 1)
         '(0)
-        (let loop ((i 0) ; loop variable is initialized to 0
-                   (result '()))
+        (let loop ((i 0) (result '())) ; loop function with i's value initialized to 0
           (if (= i (- n 1))
               (reverse result) ; If all elements have been processed, reverse the list
 
               ; Recursively calls loop with the next index
-              ; and the current result list
-              (loop (+ i 1)
-                    (cons (* (list-ref coefficients i) (- n i 1)) result))))))) ; Calculates the coeff of the i-th term
+              ; and the current result list, with
+              (loop (+ i 1) (cons (* (list-ref coefficients i) (- n i 1)) result))))))) ; Calculates the coeff of the i-th term
+              ; [4x^2,2x,1] -> 4x2+2x1 -> [8,2]
 
 (define (get-approximations coefficients)
   (let* ((deg (- (length coefficients) 1))
-         (pi-val pi)
          (p-0 (list-ref coefficients deg))
          (p-n (car coefficients))
-         (r (magnitude (expt (/ p-0 p-n) (/ 1 deg))))
-         (angles (for/list ((x (in-range 0 deg))) (* x (/ (* 2 pi-val) deg)))))
-    (map (λ(angle) (+ (* r (cos angle)) (* r (sin angle) 0+i))) angles)))
+         (r (magnitude (expt (/ p-0 p-n) (/ 1 deg)))) ; r = (|p0/pn|)^(1/deg)
+
+         ;Distributes angles evenly, the angle amount is equal to the degree of the polynomial
+         (angles (for/list ((x (in-range 0 deg))) (* x (/ (* 2 pi) deg)))))
+    (map (λ(angle) (+ (* r (cos angle)) (* r (sin angle) 0+i))) angles))) ; Converts the polar coordinates to complex numbers
 
 
+; Calculates the distance from approximation k to every other approximation in the list
 (define (calculate-sigma approximations k)
   (let ((zk (list-ref approximations k)))
     (foldl (λ(zj sigma)
@@ -77,16 +82,13 @@
                                                                                 ; poly-val is applied on every element
                                                                                 ; of the approximations list using
                                                                                 ; the lambda function
-    ; Every element in poly-eval is sent as a parameter to is-close-to-zero,
-    ; along with the epsilon.
-    ; If any element isn't precise enough, returns false
-    ; If all elements are precise enough, returns true
-    (foldl (λ(eval roots-converge)
-                (if (not (is-close-to-zero eval epsilon))
-                    #f
-                    roots-converge))
-           #t ; The initial value of roots-converge
-           poly-evals))) ; List of polynomial evaluations
+
+    (let loop ((lst poly-evals))
+        (cond
+          ((null? lst) #t) ; If the list is empty, all elements were close to zero
+          ((not (is-close-to-zero (car lst) epsilon)) #f) ; If an element is not close to zero, return #f
+          (else (loop (cdr lst)))))) ; Otherwise, continue with the rest of the list
+)
 
 (define (aberth-method coefficients epsilon)
   (let ((approximations (get-approximations coefficients))
@@ -98,9 +100,9 @@
               approximations ; If max-iterations has been reached, the approximations list is returned
               (let ((offsets
                      (for/list ((zk approximations) (k (in-naturals)))
-                       (let* ((frac (frac-val coefficients derivative-coefficients zk))
+                       (let ((frac (frac-val coefficients derivative-coefficients zk))
                               (sigma (calculate-sigma approximations k)))
-                         (/ frac (- 1 (* frac sigma)))))))
+                         (/ frac (- 1 (* frac sigma))))))) ; offset = frac / ( 1 - (frac*sigma) )
 
              (let ((new-approximations (map - approximations offsets))) ;
 
