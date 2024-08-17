@@ -1,11 +1,8 @@
 import time
-import sys
 
-sys.setrecursionlimit(2000)
+import numpy as np
 
-
-def round_complex(complex_num):
-    return [round(num.real, 3) + round(num.imag, 3) * 1j for num in complex_num]
+PI = 3.141592653589793
 
 
 def read_coefficients(filename):
@@ -60,17 +57,6 @@ def sin(x, precision=50):
     return sin_x
 
 
-def pi():
-    return 3.141592653589793
-
-
-def poly_val_rec(p, x, i=0):  # n = deg(p)
-    if i == len(p):
-        return 0
-    else:
-        return p[i] + x * poly_val_rec(p, x, i + 1)
-
-
 def poly_val(p, x):
     s = 0
     for i in range(len(p)):
@@ -94,11 +80,10 @@ def frac_val(p, q, x):
         return x * (poly_val(p[::-1], 1 / x)) / poly_val(q[::-1], 1 / x)
 
 
-def calculate_sigma(approximations, k):
-    zk = approximations[k]
+def calculate_sigma(approximations, zk):
     sigma = 0.0
-    for j, zj in enumerate(approximations):
-        if j != k and zk != zj:
+    for zj in approximations:
+        if zk != zj:
             sigma += 1 / (zk - zj)
     return sigma
 
@@ -131,9 +116,6 @@ def get_approximations(coefficients):
     # Polynomial's degree
     deg = len(coefficients) - 1
 
-    # Precompute pi
-    pi_val = pi()
-
     # Constant coefficient (lower bound)
     p_0 = coefficients[deg]
 
@@ -144,7 +126,7 @@ def get_approximations(coefficients):
     r = abs((p_0 / p_n) ** (1 / deg))
 
     # Distributes the numbers across the complex plane
-    angles = [x * (2 * pi_val) / (deg-1) for x in range(deg)]
+    angles = [x * (2 * PI) / (deg-1) for x in range(deg)]
     return [complex(r * cos(angle), r * sin(angle)) for angle in angles]
 
 
@@ -156,22 +138,23 @@ def aberth_method(coefficients, epsilon=0.0001):
     :param epsilon: The precision level of the algorithm
     :return: Array of roots
     """
+    loop_size = 20
     # Initial root approximations
     approximations = get_approximations(coefficients)
     derivative_coefficients = polynomial_derivative_coefficients(coefficients)  # Polynomial derivative's coefficients
 
     # The process is repeated a number of times for better results
-    for n in range(100):
+    for n in range(loop_size):
         # Array of offsets (w_k)
         offsets = []
 
         # Finds the offset for every approximation
-        for k, zk in enumerate(approximations):
+        for zk in approximations:
 
             # p(z_k)/p'(z_k)
             frac = frac_val(coefficients, derivative_coefficients, zk)
 
-            sigma = calculate_sigma(approximations, k)
+            sigma = calculate_sigma(approximations, zk)
 
             denominator = 1 - frac * sigma
 
@@ -195,15 +178,20 @@ def aberth_method(coefficients, epsilon=0.0001):
     return approximations
 
 
-# coefficients = [4, 6, 8, -10, 4]
 
 coefficients = read_coefficients('poly_coeff(997).txt')  # Polynomial's coefficients
 
-
+#
 start = time.time()
 result = (aberth_method(coefficients))
+result = np.sort_complex(result)
 end = time.time()
 print(end - start)
 
-print(round_complex(result))
-print(len(result))
+np_roots = np.roots(coefficients)
+np_roots = np.sort_complex(np_roots)
+
+for i in range(len(result)):
+    print(result[i], np_roots[i])
+    # print(np_roots[i])
+
